@@ -1,10 +1,10 @@
 # biznesenergia-crm
 
-Warstwa biznesowa i integracyjna dla CRM Biznes Energia, oparta na [Twenty CRM].
+Warstwa biznesowa i integracyjna dla CRM Biznes Energia, oparta na [Twenty CRM](https://github.com/twentyhq/twenty).
 
-Repozytorium Twenty:
+Repozytorium źródłowe Twenty: [`BiznesEnergia/twenty`](https://github.com/BiznesEnergia/twenty).
 
-`BiznesEnergia/twenty`
+Po podłączeniu źródło Twenty będzie dostępne w tym repozytorium jako submodule `packages/twenty`.
 
 ---
 
@@ -15,6 +15,8 @@ Repozytorium Twenty:
 | Local      | http://localhost:3000           | `feature/*` | Development      |
 | Staging    | https://staging.crm.twojprad.pl | `develop`   | Testy            |
 | Production | https://crm.twojprad.pl         | `main`      | Dane produkcyjne |
+
+> Adresy środowisk staging i production są wartościami roboczymi i wymagają potwierdzenia przed wdrożeniem.
 
 ### Local
 
@@ -36,32 +38,41 @@ Deployment odbywa się przez CI/CD.
 
 # Stack
 
-- Twenty CRM
+## Twenty
+
+- Node.js w wersji z `packages/twenty/.nvmrc`
+- Yarn w wersji z `packageManager`
+- Nx
+- TypeScript
 - PostgreSQL
 - Redis
+- Docker
+- Docker Compose
+
+## Biznes Energia
+
 - Node.js
 - TypeScript
 - pnpm
-- Docker
-- Docker Compose
 - Caddy
 - GitHub Actions
 - GitHub Container Registry
 - restic
 
+Twenty pozostaje w swoim workspace Yarn/Nx. Własne pakiety Biznes Energia są oddzielnym workspace pnpm.
+
 ---
 
-# Struktura
+# Struktura docelowa
 
 ```text
 biznesenergia-crm/
 │
-├── apps/
-│   ├── integrations/
-│   └── api/
-│
 ├── packages/
-│   └── shared/
+│   ├── twenty/
+│   ├── biznesenergia-api/
+│   ├── biznesenergia-integrations/
+│   └── biznesenergia-shared/
 │
 ├── infrastructure/
 │   ├── docker/
@@ -97,10 +108,18 @@ biznesenergia-crm/
 │
 ├── .env.example
 ├── .gitignore
+├── .gitmodules
 ├── package.json
+├── pnpm-workspace.yaml
 ├── pnpm-lock.yaml
 └── README.md
 ```
+
+`packages/twenty` jest źródłem Twenty i nie należy do workspace pnpm. Pozostałe katalogi w `packages/` są oddzielnymi pakietami Biznes Energia.
+
+# Stan projektu
+
+Repozytorium znajduje się na etapie przygotowania fundamentu. Własne API, integracje i biblioteki będą rozwijane w `packages/biznesenergia-*`, a Twenty pozostanie w osobnym forku.
 
 ---
 
@@ -231,43 +250,107 @@ Production deployment wymaga ręcznego zatwierdzenia.
 
 # Twenty
 
-Twenty jest utrzymywane w osobnym repozytorium:
+Twenty jest utrzymywane w osobnym forku:
+
+- [`BiznesEnergia/twenty`](https://github.com/BiznesEnergia/twenty)
+- fork upstream: [`twentyhq/twenty`](https://github.com/twentyhq/twenty)
+
+`biznesenergia-crm` korzysta z forka jako submodule:
 
 ```text
 BiznesEnergia/twenty
+        │
+        │ submodule: packages/twenty
+        ▼
+BiznesEnergia/biznesenergia-crm
 ```
 
-Repozytorium `BiznesEnergia/twenty` zawiera:
+Fork zawiera zmiany wymagane przez Biznes Energia, w tym customizacje UI, zmiany backendu i poprawki Twenty. Kod specyficzny dla Biznes Energia pozostaje poza submodulem i obejmuje:
 
-- fork Twenty,
-- zmiany core,
-- customizacje UI,
-- zmiany backendu,
-- poprawki wymagające modyfikacji Twenty.
-
-`biznesenergia-crm` zawiera kod specyficzny dla Biznes Energia:
-
-- integracje,
 - API,
+- integracje,
 - automatyzacje,
 - worker,
 - wspólne biblioteki,
 - infrastrukturę.
 
-Preferowany model:
+Twenty ma własny workspace Yarn/Nx i pozostaje niezależny od workspace pnpm głównego repozytorium. Preferujemy rozszerzenia przez API, Apps i integracje; zmiany w core Twenty stosujemy tylko wtedy, gdy rozszerzenie systemu nie wystarcza.
 
-```text
-BiznesEnergia/twenty
-        │
-        │ Docker image
-        ▼
-BiznesEnergia/biznesenergia-crm
-        │
-        ▼
-   Staging / Production
+# Development
+
+## Wymagania
+
+- WSL2 z Ubuntu
+- Git
+- Docker i Docker Compose
+- Node.js w wersji wskazanej przez `packages/twenty/.nvmrc`
+- Yarn i Corepack dla Twenty
+- pnpm dla własnych pakietów
+
+## Windows i długie ścieżki
+
+Preferowanym środowiskiem dla Twenty jest WSL2. Przy bezpośrednim klonowaniu Twenty w Git for Windows mogą wystąpić błędy `Filename too long`. W takim przypadku włącz obsługę długich ścieżek:
+
+```bash
+git config --global core.longpaths true
 ```
 
-Twenty samo wspiera self-hosting przez Docker Compose oraz rozszerzanie CRM przez Apps, API i kod, dlatego zmiany core powinny być stosowane tylko wtedy, gdy rozszerzenie systemu nie wystarcza.
+## Pierwsze pobranie
+
+Po podłączeniu submodule:
+
+```bash
+git clone --recurse-submodules https://github.com/BiznesEnergia/biznesenergia-crm.git
+cd biznesenergia-crm
+git submodule update --init --recursive
+```
+
+Jeżeli repozytorium zostało pobrane wcześniej:
+
+```bash
+git submodule update --init --recursive
+```
+
+## Uruchomienie Twenty
+
+Twenty uruchamiamy z katalogu `packages/twenty`, zgodnie z instrukcją Twenty dotyczącą lokalnego środowiska:
+
+- [Local setup](https://docs.twenty.com/developers/contribute/capabilities/local-setup#windows-wsl)
+- [Self-hosting](https://docs.twenty.com/developers/self-host/capabilities/docker-compose)
+
+W Twenty używamy wersji Node.js z `.nvmrc` oraz Yarn z `packageManager`. Nie należy uruchamiać Twenty z workspace pnpm głównego repozytorium.
+
+## Własne pakiety
+
+Własne pakiety Biznes Energia będą instalowane i uruchamiane z workspace pnpm w katalogu głównym repozytorium. `packages/twenty` jest celowo wykluczone z tego workspace:
+
+```yaml
+packages:
+  - 'packages/*'
+  - '!packages/twenty'
+```
+
+# Aktualizacja Twenty
+
+W klonie forka `origin` wskazuje `BiznesEnergia/twenty`, a `upstream` wskazuje `twentyhq/twenty`. Aktualizacja odbywa się w repozytorium forka:
+
+```bash
+cd packages/twenty
+git remote add upstream https://github.com/twentyhq/twenty.git
+git fetch upstream
+git switch main
+git merge --ff-only upstream/main
+git push origin main
+```
+
+Następnie w repozytorium CRM aktualizujemy wskazanie submodule:
+
+```bash
+cd ../..
+git submodule update --remote packages/twenty
+```
+
+PR ze zmianą wskaźnika submodule przechodzi przez review i testy Twenty przed wdrożeniem. W razie konfliktów najpierw aktualizujemy fork, a następnie ponownie wykonujemy aktualizację submodule.
 
 ---
 
@@ -276,19 +359,19 @@ Twenty samo wspiera self-hosting przez Docker Compose oraz rozszerzanie CRM prze
 Integracje znajdują się w:
 
 ```text
-apps/integrations/
+packages/biznesenergia-integrations/
 ```
 
 Przykłady:
 
 ```text
-apps/integrations/
+packages/biznesenergia-integrations/
 ├── ksef/
 ├── erp/
 └── email/
 ```
 
-Integracje powinny być niezależnymi modułami i posiadać własne testy.
+Integracje powinny być niezależnymi modułami i posiadać własne testy. Każda integracja komunikuje się z Twenty przez jego API lub warstwę integracyjną, zamiast bezpośrednio modyfikować kod submodule.
 
 ---
 
@@ -415,6 +498,12 @@ docs/
 ├── deployment.md
 └── integrations/
 ```
+
+# Licencja
+
+Twenty jest utrzymywane w osobnym forku i podlega własnym zasadom licencyjnym. Kod Twenty jest oznaczony licencjami AGPL oraz, w części plików, licencjami komercyjnymi Enterprise. Przy aktualizacji forka należy zachować pliki `LICENSE`, nagłówki licencyjne i wymagane warunki dystrybucji.
+
+Przed użyciem komercyjnym, publikacją obrazu albo dystrybucją zmian należy zweryfikować obowiązujące licencje i zgodność z polityką Biznes Energia.
 
 ---
 
