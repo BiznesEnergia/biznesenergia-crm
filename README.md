@@ -1,76 +1,57 @@
 # biznesenergia-crm
 
-Customizowany [Twenty CRM](https://github.com/twentyhq/twenty) dla Biznes Energia.
+Warstwa biznesowa i integracyjna dla CRM Biznes Energia, oparta na [Twenty CRM].
+
+Repozytorium Twenty:
+
+`BiznesEnergia/twenty`
 
 ---
 
 # Środowiska
 
-| Środowisko | URL                             | Branch      | Przeznaczenie      |
-| ---------- | ------------------------------- | ----------- | ------------------ |
-| Local      | http://localhost:3000           | `feature/*` | Development        |
-| Staging    | https://staging.crm.twojprad.pl | `develop`   | Testy i integracje |
-| Production | https://crm.twojprad.pl         | `main`      | Dane produkcyjne   |
+| Środowisko | URL                             | Branch      | Przeznaczenie    |
+| ---------- | ------------------------------- | ----------- | ---------------- |
+| Local      | http://localhost:3000           | `feature/*` | Development      |
+| Staging    | https://staging.crm.twojprad.pl | `develop`   | Testy            |
+| Production | https://crm.twojprad.pl         | `main`      | Dane produkcyjne |
 
 ### Local
 
-Każdy developer posiada własne lokalne środowisko:
-
-- Twenty
-- PostgreSQL
-- Redis
-- API
-- integracje
-
-Lokalna baza danych nie jest współdzielona pomiędzy developerami.
+Każdy developer posiada własne środowisko lokalne.
 
 ### Staging
 
-Środowisko testowe możliwie zbliżone do produkcji.
+Środowisko testowe zbliżone do produkcji.
 
-Staging nie korzysta z produkcyjnej bazy danych ani produkcyjnych sekretów.
+Nie korzysta z produkcyjnej bazy ani produkcyjnych sekretów.
 
 ### Production
 
-Środowisko produkcyjne zawierające rzeczywiste dane biznesowe.
+Środowisko produkcyjne z rzeczywistymi danymi.
 
-Zmiany w produkcji wykonywane są wyłącznie przez proces CI/CD.
+Deployment odbywa się przez CI/CD.
 
 ---
 
-# Stack technologiczny
-
-## Core
+# Stack
 
 - Twenty CRM
 - PostgreSQL
 - Redis
-- Docker
-- Docker Compose
-- Caddy
-
-## Development
-
 - Node.js
 - TypeScript
 - pnpm
-
-## CI/CD
-
-- GitHub
+- Docker
+- Docker Compose
+- Caddy
 - GitHub Actions
-- GitHub Container Registry (GHCR)
-
-## Backup
-
-- PostgreSQL dump
-- Twenty storage
+- GitHub Container Registry
 - restic
-- offsite storage
 
 ---
 
-# Docelowa struktura
+# Struktura
 
 ```text
 biznesenergia-crm/
@@ -80,8 +61,7 @@ biznesenergia-crm/
 │   └── api/
 │
 ├── packages/
-│   ├── shared/
-│   └── twenty-client/
+│   └── shared/
 │
 ├── infrastructure/
 │   ├── docker/
@@ -124,9 +104,7 @@ biznesenergia-crm/
 
 ---
 
-# Branching strategy
-
-Główne branche:
+# Branching
 
 ```text
 main
@@ -134,149 +112,68 @@ develop
 feature/*
 ```
 
-## `main`
+### `main`
 
-Wersja produkcyjna.
+Production.
 
-```text
-main = production
-```
+### `develop`
 
-Bez bezpośredniego pushowania.
+Staging.
 
-## `develop`
+### `feature/*`
 
-Aktualna wersja stagingowa.
-
-```text
-develop = staging
-```
-
-## `feature/*`
-
-Branch roboczy dla konkretnej funkcji.
+Nowe funkcje.
 
 Przykłady:
 
 ```text
 feature/ksef-integration
 feature/customer-import
-feature/new-crm-fields
 feature/email-sync
 feature/erp-sync
 ```
 
-Dodatkowo:
-
-```text
-fix/*
-hotfix/*
-chore/*
-```
-
-dla poprawek i zadań technicznych.
-
 ---
 
-# Zasada pracy developera
+# Workflow
 
-Bezpośredni push do:
+Bezpośredni push do `main` i `develop` jest zabroniony.
 
 ```text
-main
+feature/*
+   │
+   ▼
+Pull Request
+   │
+   ▼
+CI
+   │
+   ▼
+Code Review
+   │
+   ▼
 develop
+   │
+   ▼
+STAGING
+   │
+   ▼
+TESTY
+   │
+   ▼
+Pull Request → main
+   │
+   ▼
+PRODUCTION
 ```
 
-jest zabroniony.
-
-Proces:
-
-```text
-feature/ksef-integration
-        │
-        ▼
-    Pull Request
-        │
-        ▼
-       CI
-        │
-        ▼
-   Code Review
-        │
-        ▼
-      develop
-        │
-        ▼
-     STAGING
-        │
-        ▼
-      TESTY
-        │
-        ▼
- Pull Request → main
-        │
-        ▼
-   PRODUCTION
-```
-
----
-
-# Pull Request
-
-Każda zmiana przechodzi przez Pull Request.
-
-PR powinien zawierać:
-
-- opis zmiany
-- powód zmiany
-- sposób testowania
-- informację o migracjach DB
-- informację o zmianach konfiguracji
-- informację o zmianach integracji
-
-Przykład:
-
-```text
-## Co zostało zmienione?
-
-Dodano synchronizację klientów z ERP.
-
-## Dlaczego?
-
-Potrzebujemy automatycznej synchronizacji danych klientów.
-
-## Testy
-
-- [x] Unit tests
-- [x] Integration tests
-- [x] Test na staging
-
-## Database
-
-- [ ] Brak zmian
-- [ ] Dodano migrację
-
-## Configuration
-
-- [ ] Brak zmian
-- [ ] Dodano nowe zmienne środowiskowe
-```
-
----
-
-# Code Review
-
-Minimalnie **1 osoba musi zaakceptować PR** przed merge.
-
-Developer nie powinien samodzielnie zatwierdzać i mergować własnej zmiany.
-
-GitHub pozwala wymusić review oraz wymagane status checks na chronionych branchach.
+Każdy PR wymaga minimum jednego review.
 
 ---
 
 # CI
 
-Każdy Pull Request powinien przejść:
+Pull Request musi przejść:
 
 ```text
 lint
@@ -286,181 +183,91 @@ integration tests
 docker build
 ```
 
-Docelowo:
-
-```text
-PR
- │
- ├── lint              ✅
- ├── typecheck         ✅
- ├── unit tests        ✅
- ├── integration tests ✅
- └── docker build      ✅
-```
-
-PR nie może zostać zmergowany, jeżeli wymagane checki nie przejdą.
-
 ---
 
 # Deployment
 
 ## Staging
 
-Merge do:
+Merge do `develop` uruchamia automatyczny deployment.
 
 ```text
 develop
-```
-
-uruchamia automatyczny deployment:
-
-```text
-develop
-   │
-   ▼
-GitHub Actions
-   │
-   ▼
+   ↓
+CI
+   ↓
 Docker build
-   │
-   ▼
+   ↓
 GHCR
-   │
-   ▼
+   ↓
 Staging VPS
-   │
-   ▼
+   ↓
 Health check
 ```
 
 ## Production
 
-Merge do:
+Merge do `main` uruchamia przygotowanie deploymentu produkcyjnego.
 
 ```text
 main
-```
-
-przygotowuje deployment produkcyjny.
-
-Proces:
-
-```text
-main
- │
- ▼
+   ↓
 CI
- │
- ▼
+   ↓
 Docker image
- │
- ▼
+   ↓
 Backup
- │
- ▼
-Production deployment
- │
- ▼
+   ↓
+Production
+   ↓
 Health check
- │
- ▼
+   ↓
 Smoke tests
 ```
 
-Production deployment powinien być początkowo ręcznie zatwierdzany.
+Production deployment wymaga ręcznego zatwierdzenia.
 
 ---
 
-# Docker images
+# Twenty
 
-Obrazy produkcyjne nie powinny być uruchamiane wyłącznie przez tag:
-
-```text
-latest
-```
-
-Każdy deployment powinien wskazywać konkretną wersję/commit:
+Twenty jest utrzymywane w osobnym repozytorium:
 
 ```text
-ghcr.io/OWNER/biznesenergia-crm:<commit-sha>
+BiznesEnergia/twenty
 ```
 
-Dzięki temu możliwy jest jednoznaczny rollback.
+Repozytorium `BiznesEnergia/twenty` zawiera:
 
----
+- fork Twenty,
+- zmiany core,
+- customizacje UI,
+- zmiany backendu,
+- poprawki wymagające modyfikacji Twenty.
 
-# Secrets
+`biznesenergia-crm` zawiera kod specyficzny dla Biznes Energia:
 
-Sekrety nie mogą znajdować się w repozytorium.
+- integracje,
+- API,
+- automatyzacje,
+- worker,
+- wspólne biblioteki,
+- infrastrukturę.
 
-Nigdy nie commitujemy:
+Preferowany model:
 
 ```text
-.env
-.env.local
-.env.staging
-.env.production
-*.key
-*.pem
+BiznesEnergia/twenty
+        │
+        │ Docker image
+        ▼
+BiznesEnergia/biznesenergia-crm
+        │
+        ▼
+   Staging / Production
 ```
 
-Do repozytorium trafia wyłącznie:
-
-```text
-.env.example
-```
-
-Przykładowe sekrety:
-
-```text
-DATABASE_URL
-REDIS_URL
-ENCRYPTION_KEY
-APP_SECRET
-KSEF_TOKEN
-ERP_API_KEY
-GOOGLE_CLIENT_SECRET
-```
-
-Sekrety Local, Staging i Production muszą być rozdzielone.
-
----
-
-# Twenty CRM
-
-Twenty jest głównym systemem CRM.
-
-Preferowane rozszerzanie Twenty:
-
-```text
-API
-Webhooks
-Apps
-Integracje
-Custom code
-```
-
-Modyfikowanie core Twenty powinno być ostatecznością.
-
-Konfiguracja CRM powinna być dokumentowana w:
-
-```text
-docs/twenty/
-```
-
-np.:
-
-```text
-docs/twenty/
-├── objects.md
-├── fields.md
-├── pipelines.md
-├── permissions.md
-├── workflows.md
-└── configuration.md
-```
-
-Twenty domyślnie może przechowywać część zmiennych konfiguracyjnych w bazie danych, dlatego konfigurację wykonywaną przez panel administracyjny trzeba traktować jako część konfiguracji systemu, a nie zakładać, że wszystko będzie widoczne w Git.
+Twenty samo wspiera self-hosting przez Docker Compose oraz rozszerzanie CRM przez Apps, API i kod, dlatego zmiany core powinny być stosowane tylko wtedy, gdy rozszerzenie systemu nie wystarcza.
 
 ---
 
@@ -472,99 +279,75 @@ Integracje znajdują się w:
 apps/integrations/
 ```
 
-Każda integracja powinna być odseparowanym modułem.
-
-Przykład:
+Przykłady:
 
 ```text
 apps/integrations/
-│
 ├── ksef/
-│   ├── client.ts
-│   ├── mapper.ts
-│   ├── sync.ts
-│   ├── webhook.ts
-│   └── tests/
-│
 ├── erp/
-│   ├── client.ts
-│   ├── mapper.ts
-│   ├── sync.ts
-│   └── tests/
-│
 └── email/
-    ├── client.ts
-    ├── sync.ts
-    └── tests/
 ```
 
----
-
-# Webhooki i eventy
-
-Każdy webhook musi być odporny na wielokrotne dostarczenie tego samego eventu.
-
-Przykład:
-
-```text
-event_id
-    │
-    ▼
-sprawdzenie czy przetworzony
-    │
- ┌──┴──┐
- │     │
- TAK   NIE
- │     │
-stop   process
-       │
-       ▼
-     save event
-```
-
-Operacje integracyjne powinny być idempotentne.
+Integracje powinny być niezależnymi modułami i posiadać własne testy.
 
 ---
 
 # Worker
 
-Ciężkie operacje nie powinny blokować API.
-
-Docelowy przepływ:
+Ciężkie operacje wykonywane są asynchronicznie:
 
 ```text
 Twenty
-   │
-   ▼
+   ↓
 API
-   │
-   ▼
-Redis Queue
-   │
-   ▼
+   ↓
+Redis
+   ↓
 Worker
-   │
-   ├── ERP
-   ├── KSeF
-   ├── Email
-   └── inne integracje
+   ↓
+Integracja
 ```
+
+Webhooki i zadania integracyjne powinny być idempotentne.
+
+---
+
+# Secrets
+
+Sekrety nie są przechowywane w Git.
+
+Do repozytorium trafia:
+
+```text
+.env.example
+```
+
+Nie commitujemy:
+
+```text
+.env
+.env.local
+.env.staging
+.env.production
+*.key
+*.pem
+```
+
+Sekrety Local, Staging i Production są rozdzielone.
 
 ---
 
 # Database
 
-PostgreSQL jest główną bazą danych.
+PostgreSQL.
 
-Zmiany schematu muszą być wykonywane przez migracje.
-
-Migracje:
+Zmiany schematu wykonujemy przez migracje:
 
 ```text
 database/migrations/
 ```
 
-Nie wykonujemy ręcznych zmian schematu produkcyjnej bazy bez zapisania ich w procesie migracji.
+Nie wykonujemy ręcznych zmian schematu produkcyjnej bazy.
 
 ---
 
@@ -572,14 +355,12 @@ Nie wykonujemy ręcznych zmian schematu produkcyjnej bazy bez zapisania ich w pr
 
 Backup produkcji obejmuje:
 
-```text
-PostgreSQL
-Twenty storage
-```
+- PostgreSQL
+- Twenty storage
 
-Backup jest przechowywany poza głównym VPS.
+Backup przechowywany jest poza głównym VPS.
 
-Minimalna retencja:
+Retencja:
 
 ```text
 14 × daily
@@ -589,81 +370,13 @@ Minimalna retencja:
 
 Przed deploymentem produkcyjnym wykonywany jest dodatkowy backup.
 
----
-
-# Restore
-
-Backup musi być okresowo testowany.
-
-Minimum:
-
-```text
-backup
-   │
-   ▼
-restore
-   │
-   ▼
-test PostgreSQL
-   │
-   ▼
-test Twenty
-```
-
-Test restore powinien być wykonywany cyklicznie.
+Restore backupu jest okresowo testowany.
 
 ---
 
-# Monitoring
+# Infrastructure
 
-Monitorowane powinny być minimum:
-
-```text
-CPU
-RAM
-Disk
-SSL
-HTTP
-PostgreSQL
-Redis
-Backup
-Twenty
-API
-Worker
-Integrations
-```
-
----
-
-# Logging
-
-Logi powinny zawierać identyfikatory umożliwiające śledzenie operacji:
-
-```text
-request_id
-job_id
-event_id
-integration
-status
-duration
-```
-
-Nigdy nie logujemy:
-
-```text
-password
-API keys
-tokens
-OAuth secrets
-ENCRYPTION_KEY
-danych uwierzytelniających
-```
-
----
-
-# Zasada infrastruktury
-
-Nie wykonujemy ręcznych zmian produkcyjnego kodu.
+Nie modyfikujemy ręcznie kodu produkcyjnego.
 
 Nie:
 
@@ -687,62 +400,32 @@ Deployment
 
 ---
 
-# Zasada danych
+# Documentation
 
-Kod i infrastruktura są wersjonowane w Git.
-
-Dane biznesowe nie są wersjonowane w Git.
-
-```text
-GIT
-├── kod
-├── konfiguracja infrastruktury
-├── Docker
-├── CI/CD
-├── migracje
-└── dokumentacja
-
-PRODUCTION
-├── dane CRM
-├── PostgreSQL
-├── pliki
-└── sekrety
-```
-
----
-
-# Dokumentacja
-
-Dokumentacja projektu znajduje się w:
+Dokumentacja znajduje się w:
 
 ```text
 docs/
 ```
-
-Minimalny zestaw:
 
 ```text
 docs/
 ├── architecture.md
 ├── development.md
 ├── deployment.md
-├── backup.md
-├── security.md
 └── integrations/
 ```
 
-Każda istotna integracja powinna posiadać własną dokumentację.
-
 ---
 
-# Zasada ogólna
+# Zasada
 
 > Kod → Git
-> Review → Pull Request
+> Zmiany → Pull Request
 > Testy → CI
 > Staging → `develop`
 > Production → `main`
 > Deployment → CI/CD
 > Dane → PostgreSQL / storage
 > Backup → offsite
-> Sekrety → secret management
+> Sekrety → poza Git
